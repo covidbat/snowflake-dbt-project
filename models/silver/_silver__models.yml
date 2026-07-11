@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_clients
+    columns:
+      - name: client_id
+        tests: [unique, not_null]
+
+  - name: stg_debtors
+    columns:
+      - name: debtor_id
+        tests: [unique, not_null]
+
+  - name: stg_agents
+    columns:
+      - name: agent_id
+        tests: [unique, not_null]
+
+  - name: stg_accounts
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+      - name: client_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_clients')
+              field: client_id
+      - name: debtor_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_debtors')
+              field: debtor_id
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['ACTIVE', 'PAID', 'DISPUTED']
+
+  - name: stg_payments
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+      - name: account_id
+        tests:
+          - relationships:
+              to: ref('stg_accounts')
+              field: account_id
+
+  - name: stg_collection_activities
+    columns:
+      - name: activity_id
+        tests: [unique, not_null]
+      - name: activity_type
+        tests:
+          - accepted_values:
+              values: ['CALL', 'LETTER', 'EMAIL']
