@@ -27,13 +27,15 @@ models:
       - name: client_sk
         tests:
           - relationships:
-              to: ref('dim_client')
-              field: client_sk
+              arguments:
+                to: ref('dim_client')
+                field: client_sk
       - name: debtor_sk
         tests:
           - relationships:
-              to: ref('dim_debtor')
-              field: debtor_sk
+              arguments:
+                to: ref('dim_debtor')
+                field: debtor_sk
 
   - name: dim_date
     description: "Calendar dimension, 2023-2024."
@@ -49,13 +51,15 @@ models:
       - name: account_sk
         tests:
           - relationships:
-              to: ref('dim_account')
-              field: account_sk
+              arguments:
+                to: ref('dim_account')
+                field: account_sk
       - name: date_key
         tests:
           - relationships:
-              to: ref('dim_date')
-              field: date_key
+              arguments:
+                to: ref('dim_date')
+                field: date_key
       - name: payment_amount
         tests: [not_null]
 
@@ -67,10 +71,12 @@ models:
       - name: account_sk
         tests:
           - relationships:
-              to: ref('dim_account')
-              field: account_sk
+              arguments:
+                to: ref('dim_account')
+                field: account_sk
       - name: agent_sk
         tests:
           - relationships:
-              to: ref('dim_agent')
-              field: agent_sk
+              arguments:
+                to: ref('dim_agent')
+                field: agent_sk

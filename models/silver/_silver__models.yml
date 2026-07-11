@@ -24,18 +24,21 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_clients')
-              field: client_id
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
       - name: debtor_id
         tests:
           - not_null
           - relationships:
-              to: ref('stg_debtors')
-              field: debtor_id
+              arguments:
+                to: ref('stg_debtors')
+                field: debtor_id
       - name: status
         tests:
           - accepted_values:
-              values: ['ACTIVE', 'PAID', 'DISPUTED']
+              arguments:
+                values: ['ACTIVE', 'PAID', 'DISPUTED']
 
   - name: stg_payments
     columns:
@@ -44,8 +47,9 @@ models:
       - name: account_id
         tests:
           - relationships:
-              to: ref('stg_accounts')
-              field: account_id
+              arguments:
+                to: ref('stg_accounts')
+                field: account_id
 
   - name: stg_collection_activities
     columns:
@@ -54,4 +58,5 @@ models:
       - name: activity_type
         tests:
           - accepted_values:
-              values: ['CALL', 'LETTER', 'EMAIL']
+              arguments:
+                values: ['CALL', 'LETTER', 'EMAIL']
