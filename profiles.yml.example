@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# dbt Core users: copy this to ~/.dbt/profiles.yml (or run with
+#   dbt run --profiles-dir .
+# dbt Cloud users: IGNORE this file. The Snowflake connection is set in the
+# dbt Cloud UI (Account Settings -> Connections), not here.
+# ---------------------------------------------------------------------------
+arm_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"   # e.g. ab12345.us-east-1
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: TRANSFORM_ROLE          # role with CREATE SCHEMA on the database
+      database: ARM_DB              # dbt creates RAW/BRONZE/SILVER/GOLD here
+      warehouse: TRANSFORM_WH
+      schema: ARM                   # base schema; custom schemas are used as-is
+      threads: 4
+      client_session_keep_alive: false

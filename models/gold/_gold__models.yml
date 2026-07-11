@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: dim_client
+    description: "One row per creditor/client placing debt."
+    columns:
+      - name: client_sk
+        tests: [unique, not_null]
+
+  - name: dim_debtor
+    description: "One row per consumer with placed debt."
+    columns:
+      - name: debtor_sk
+        tests: [unique, not_null]
+
+  - name: dim_agent
+    description: "One row per collections agent."
+    columns:
+      - name: agent_sk
+        tests: [unique, not_null]
+
+  - name: dim_account
+    description: "One row per placed account (the collection entity)."
+    columns:
+      - name: account_sk
+        tests: [unique, not_null]
+      - name: client_sk
+        tests:
+          - relationships:
+              to: ref('dim_client')
+              field: client_sk
+      - name: debtor_sk
+        tests:
+          - relationships:
+              to: ref('dim_debtor')
+              field: debtor_sk
+
+  - name: dim_date
+    description: "Calendar dimension, 2023-2024."
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+
+  - name: fct_payments
+    description: "Transactional fact: one row per payment received."
+    columns:
+      - name: payment_sk
+        tests: [unique, not_null]
+      - name: account_sk
+        tests:
+          - relationships:
+              to: ref('dim_account')
+              field: account_sk
+      - name: date_key
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: payment_amount
+        tests: [not_null]
+
+  - name: fct_collection_activity
+    description: "Transactional fact: one row per collection touch."
+    columns:
+      - name: activity_sk
+        tests: [unique, not_null]
+      - name: account_sk
+        tests:
+          - relationships:
+              to: ref('dim_account')
+              field: account_sk
+      - name: agent_sk
+        tests:
+          - relationships:
+              to: ref('dim_agent')
+              field: agent_sk

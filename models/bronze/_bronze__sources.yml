@@ -1,0 +1,16 @@
+version: 2
+
+# In production these tables would be landed by your ingestion tool
+# (Fivetran, Airbyte, Snowpipe, etc.). Here the seeds populate RAW so the
+# project runs end-to-end. Run `dbt seed` before `dbt run`.
+sources:
+  - name: arm
+    schema: raw
+    description: "Raw collections-platform tables, as ingested."
+    tables:
+      - name: raw_clients
+      - name: raw_debtors
+      - name: raw_agents
+      - name: raw_accounts
+      - name: raw_payments
+      - name: raw_collection_activities
