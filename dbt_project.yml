@@ -1,26 +1,18 @@
-name: 'arm_analytics'
+name: 'pm_sales_nps'
 version: '1.0.0'
 config-version: 2
 
-# This profile must exist in your profiles.yml (dbt Core) or be
-# configured in the dbt Cloud connection UI.
-profile: 'arm_analytics'
+profile: 'pm_sales_nps'
 
 model-paths: ["models"]
-seed-paths: ["seeds"]
 macro-paths: ["macros"]
-
 target-path: "target"
-clean-targets:
-  - "target"
-  - "dbt_packages"
+clean-targets: ["target", "dbt_packages"]
 
-# ---------------------------------------------------------------------------
-# Medallion layering. Bronze/Silver stay cheap as views; Gold is queried by
-# BI tools so we persist it as tables.
-# ---------------------------------------------------------------------------
+# No seed-paths: raw data now arrives via Snowpipe from S3, not CSV seeds.
+
 models:
-  arm_analytics:
+  pm_sales_nps:
     bronze:
       +materialized: view
       +schema: bronze
@@ -30,7 +22,4 @@ models:
     gold:
       +materialized: table
       +schema: gold
-
-seeds:
-  arm_analytics:
-    +schema: raw          # seeds simulate raw ingestion -> RAW schema
+      # facts override to incremental in-model (see fct_*.sql)

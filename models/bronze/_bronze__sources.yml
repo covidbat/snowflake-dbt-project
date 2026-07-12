@@ -1,16 +1,18 @@
 version: 2
 
-# In production these tables would be landed by your ingestion tool
-# (Fivetran, Airbyte, Snowpipe, etc.). Here the seeds populate RAW so the
-# project runs end-to-end. Run `dbt seed` before `dbt run`.
 sources:
-  - name: arm
+  - name: pm_raw
     schema: raw
-    description: "Raw collections-platform tables, as ingested."
+    description: "Raw feeds landed by Snowpipe from S3 (migrated from SQL Server)."
+    config:
+      loaded_at_field: _load_ts
+      freshness:
+        warn_after:  {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
     tables:
-      - name: raw_clients
-      - name: raw_debtors
-      - name: raw_agents
-      - name: raw_accounts
-      - name: raw_payments
-      - name: raw_collection_activities
+      - name: raw_sales_transactions
+      - name: raw_products
+      - name: raw_customers
+      - name: raw_sales_reps
+      - name: raw_markets
+      - name: raw_nps_responses

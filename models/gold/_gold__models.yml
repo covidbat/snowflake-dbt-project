@@ -1,82 +1,53 @@
 version: 2
 
 models:
-  - name: dim_client
-    description: "One row per creditor/client placing debt."
+  - name: dim_product
     columns:
-      - name: client_sk
+      - name: product_sk
         tests: [unique, not_null]
-
-  - name: dim_debtor
-    description: "One row per consumer with placed debt."
+  - name: dim_customer
     columns:
-      - name: debtor_sk
+      - name: customer_sk
         tests: [unique, not_null]
-
-  - name: dim_agent
-    description: "One row per collections agent."
-    columns:
-      - name: agent_sk
-        tests: [unique, not_null]
-
-  - name: dim_account
-    description: "One row per placed account (the collection entity)."
-    columns:
-      - name: account_sk
-        tests: [unique, not_null]
-      - name: client_sk
+      - name: market_sk
         tests:
           - relationships:
               arguments:
-                to: ref('dim_client')
-                field: client_sk
-      - name: debtor_sk
-        tests:
-          - relationships:
-              arguments:
-                to: ref('dim_debtor')
-                field: debtor_sk
-
+                to: ref('dim_market')
+                field: market_sk
+  - name: dim_sales_rep
+    columns:
+      - name: sales_rep_sk
+        tests: [unique, not_null]
+  - name: dim_market
+    columns:
+      - name: market_sk
+        tests: [unique, not_null]
   - name: dim_date
-    description: "Calendar dimension, 2023-2024."
     columns:
       - name: date_key
         tests: [unique, not_null]
-
-  - name: fct_payments
-    description: "Transactional fact: one row per payment received."
+  - name: fct_sales
+    description: "Grain: one sales transaction line. Incremental (merge)."
     columns:
-      - name: payment_sk
+      - name: sale_sk
         tests: [unique, not_null]
-      - name: account_sk
+      - name: product_sk
         tests:
           - relationships:
               arguments:
-                to: ref('dim_account')
-                field: account_sk
-      - name: date_key
-        tests:
-          - relationships:
-              arguments:
-                to: ref('dim_date')
-                field: date_key
-      - name: payment_amount
+                to: ref('dim_product')
+                field: product_sk
+      - name: net_amount
         tests: [not_null]
-
-  - name: fct_collection_activity
-    description: "Transactional fact: one row per collection touch."
+  - name: fct_nps_response
+    description: "Grain: one NPS survey response. Incremental (merge)."
     columns:
-      - name: activity_sk
+      - name: nps_sk
         tests: [unique, not_null]
-      - name: account_sk
+      - name: customer_sk
         tests:
           - relationships:
               arguments:
-                to: ref('dim_account')
-                field: account_sk
-      - name: agent_sk
-        tests:
-          - relationships:
-              arguments:
-                to: ref('dim_agent')
-                field: agent_sk
+                to: ref('dim_customer')
+                field: customer_sk

@@ -1,106 +1,55 @@
-# ARM Analytics — dbt + Snowflake (Medallion Architecture)
+# PM Sales & NPS — Snowflake + dbt (migrated from SQL Server)
 
-A small, runnable dbt project for the **Accounts Receivable Management (ARM /
-debt collections)** domain. It builds a three-layer medallion architecture on
-Snowflake and lands a clean star schema in the gold layer.
+Medallion warehouse for sales and Net Promoter Score analytics. Data is
+migrated out of SQL Server as **Parquet**, landed in S3, and loaded into
+Snowflake (no dbt seeds).
 
 ```
-RAW (seeds)  ->  BRONZE (views)  ->  SILVER (views)  ->  GOLD (tables)
- ingestion       as-is landing       cleaned/typed        star schema
+S3 (raw/*.parquet)  ->  RAW  ->  BRONZE  ->  SILVER  ->  GOLD
+ SQL Server export      land    rename      clean       star schema
+ (Parquet)                      to snake    + dedup     (facts = incremental)
 ```
 
-## Domain model
+## Setup order
+1. `snowflake/01_storage_integration_and_stage.sql`  (ACCOUNTADMIN; wire AWS IAM trust)
+2. `snowflake/02_raw_tables.sql`                      (create RAW targets — shared by both loads)
+3. `snowflake/04_bulk_backfill.sql`                   (ONE-TIME: load historical SQL Server data from .../history/)
+4. `snowflake/03_snowpipes.sql`                       (go-forward: auto-ingest from .../incoming/; wire S3 -> SQS AFTER backfill)
+5. `dbt deps && dbt run && dbt test`                  (build bronze -> gold)
 
-Clients (creditors: banks, hospitals, telecom...) place delinquent **accounts**
-against **debtors**. Collections **agents** work those accounts, logging
-**activities** (calls/letters/emails), and debtors make **payments**.
+## Two-track ingestion (SQL Server -> Snowflake migration)
+Both tracks load the **same RAW tables**, from Parquet:
+- **Historical backfill (once):** SQL Server exported to Parquet, partitioned by year ->
+  `s3://pm-datalake/raw/<feed>/history/YYYY/` -> direct `COPY INTO` with
+  `MATCH_BY_COLUMN_NAME` (script 04). Warehouse is sized up to XL for the run, then back to XS.
+- **Go-forward (ongoing):** new Parquet files land in
+  `s3://pm-datalake/raw/<feed>/incoming/` -> **Snowpipe** auto-ingest (script 03).
 
-### Gold star schema
+Why Parquet: columnar + compressed (~5-10x smaller than CSV) and type-preserving,
+so a 2-3 year backfill loads fast without date/decimal parsing errors. Split large
+tables into many ~few-hundred-MB files so Snowflake loads them in parallel.
 
-| Dimensions      | Facts (grain)                                   |
-|-----------------|-------------------------------------------------|
-| `dim_client`    | `fct_payments` — one row per payment            |
-| `dim_debtor`    | `fct_collection_activity` — one row per touch   |
-| `dim_agent`     |                                                 |
-| `dim_account`   | (carries client_sk + debtor_sk)                 |
-| `dim_date`      |                                                 |
+Prefix separation (`history/` vs `incoming/`) keeps the one-time COPY and the
+auto-ingest pipe from loading the same files twice. Run the backfill first,
+validate row counts, *then* wire the S3 event notifications for `incoming/`.
 
-## Layer responsibilities
+## Gold star schema
+- Dims: `dim_product`, `dim_customer`, `dim_sales_rep`, `dim_market`, `dim_date`
+- Facts: `fct_sales` (grain: sales line), `fct_nps_response` (grain: survey) — both incremental (merge)
 
-- **Bronze** (`models/bronze`): 1:1 with raw sources. Standardize casing/naming,
-  stamp `_loaded_at`. No business logic. Materialized as **views**.
-- **Silver** (`models/silver`): the `stg_` models. Type casting, trimming,
-  null handling, derived fields (`full_name`, `recovery_rate`,
-  `resulted_in_payment`). Materialized as **views**.
-- **Gold** (`models/gold`): dimensional marts with `dbt_utils`-generated
-  surrogate keys and a `date_spine` calendar. Materialized as **tables** — this
-  is what BI tools query.
-
-## Prerequisites
-
-- A Snowflake account with a warehouse, a database (e.g. `ARM_DB`), and a role
-  that can create schemas.
-- dbt with the Snowflake adapter (`dbt-snowflake`), or a dbt Cloud project.
-
-## Setup & run
-
-**dbt Cloud:** configure the Snowflake connection in the UI, point it at this
-repo, then run the commands below in the IDE command bar.
-
-**dbt Core:** copy `profiles.yml.example` to `~/.dbt/profiles.yml`, fill in your
-Snowflake details, then:
-
-```bash
-dbt deps      # install dbt_utils
-dbt seed      # load RAW tables (simulates ingestion) -- RUN THIS FIRST
-dbt run       # build bronze -> silver -> gold
-dbt test      # run 40 data tests
-```
-
-Or all at once (seeds included in the DAG):
-
-```bash
-dbt deps && dbt build
-```
-
-## Schema naming
-
-`macros/generate_schema_name.sql` overrides dbt's default so custom schemas
-resolve to `RAW`, `BRONZE`, `SILVER`, `GOLD` cleanly instead of
-`ARM_bronze` etc. All four live under the database set in your profile.
-
-## Example gold queries
-
+## NPS metric
+`fct_nps_response` carries `is_promoter` / `is_detractor` flags so BI can compute:
 ```sql
--- Recovery rate by client
-select c.client_name, c.industry,
-       sum(a.original_balance)  as placed,
-       sum(a.amount_recovered)  as recovered,
-       round(sum(a.amount_recovered) / nullif(sum(a.original_balance),0), 3) as recovery_rate
-from gold.dim_account a
-join gold.dim_client  c on a.client_sk = c.client_sk
-group by 1, 2
-order by recovery_rate desc;
-
--- Agent effectiveness: activities vs. those that led to payment
-select ag.agent_name, ag.team,
-       count(*)                     as touches,
-       sum(f.payment_outcome_count) as payments_driven
-from gold.fct_collection_activity f
-join gold.dim_agent ag on f.agent_sk = ag.agent_sk
-group by 1, 2
-order by payments_driven desc;
-
--- Monthly payments collected
-select d.year, d.month_name, sum(f.payment_amount) as collected
-from gold.fct_payments f
-join gold.dim_date d on f.date_key = d.date_key
-group by 1, 2, d.month
-order by d.month;
+select
+  round(100.0 * (sum(is_promoter) - sum(is_detractor)) / count(*), 1) as nps
+from gold.fct_nps_response;
 ```
 
-## Note on dbt versions
-
-The generic tests use the classic `tests:` syntax (as in most dbt courses).
-Newer dbt versions emit a deprecation warning suggesting arguments be nested
-under an `arguments:` key. It still runs fine; migrate later if you like.
+## What changed vs. a seed-based project
+- Seeds removed; ingestion is S3 + Snowpipe (see `snowflake/`).
+- Bronze now normalizes SQL Server PascalCase -> snake_case and carries
+  `_source_file` / `_load_ts` for lineage.
+- Silver dedupes to the latest record per key (`qualify row_number()`), so a
+  re-dropped corrected file wins.
+- Facts are incremental with `merge`, keyed on surrogate keys.
+See `MIGRATION.md` for the T-SQL -> Snowflake rewrites.

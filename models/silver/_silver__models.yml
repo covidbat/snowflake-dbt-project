@@ -1,62 +1,55 @@
 version: 2
 
 models:
-  - name: stg_clients
+  - name: stg_products
     columns:
-      - name: client_id
+      - name: product_id
         tests: [unique, not_null]
-
-  - name: stg_debtors
+  - name: stg_customers
     columns:
-      - name: debtor_id
+      - name: customer_id
         tests: [unique, not_null]
-
-  - name: stg_agents
-    columns:
-      - name: agent_id
-        tests: [unique, not_null]
-
-  - name: stg_accounts
-    columns:
-      - name: account_id
-        tests: [unique, not_null]
-      - name: client_id
-        tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('stg_clients')
-                field: client_id
-      - name: debtor_id
-        tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('stg_debtors')
-                field: debtor_id
-      - name: status
+      - name: channel_type
         tests:
           - accepted_values:
               arguments:
-                values: ['ACTIVE', 'PAID', 'DISPUTED']
-
-  - name: stg_payments
+                values: ['CONVENIENCE', 'SUPERMARKET', 'WHOLESALE', 'HORECA', 'ONLINE']
+  - name: stg_sales_reps
     columns:
-      - name: payment_id
+      - name: sales_rep_id
         tests: [unique, not_null]
-      - name: account_id
+  - name: stg_markets
+    columns:
+      - name: market_id
+        tests: [unique, not_null]
+  - name: stg_sales_transactions
+    columns:
+      - name: sale_id
+        tests: [unique, not_null]
+      - name: product_id
         tests:
           - relationships:
               arguments:
-                to: ref('stg_accounts')
-                field: account_id
-
-  - name: stg_collection_activities
+                to: ref('stg_products')
+                field: product_id
+      - name: customer_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+  - name: stg_nps_responses
     columns:
-      - name: activity_id
+      - name: response_id
         tests: [unique, not_null]
-      - name: activity_type
+      - name: nps_score
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 10
+      - name: nps_category
         tests:
           - accepted_values:
               arguments:
-                values: ['CALL', 'LETTER', 'EMAIL']
+                values: ['Promoter', 'Passive', 'Detractor', 'Invalid']
