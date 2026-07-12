@@ -1,9 +1,0 @@
-debtor_id,first_name,last_name,state,email,phone,date_of_birth
-DB1001,James,Carter,CA,james.carter@email.com,415-555-0101,1985-04-12
-DB1002,Maria,Lopez,TX,maria.lopez@email.com,512-555-0102,1990-09-30
-DB1003,Robert,Chen,NY,,212-555-0103,1978-11-05
-DB1004,Ashley,Nguyen,CA,ashley.n@email.com,415-555-0104,1995-02-18
-DB1005,David,Okafor,FL,david.okafor@email.com,,1982-07-22
-DB1006,Sarah,Patel,TX,sarah.patel@email.com,512-555-0106,1988-12-01
-DB1007,Michael,Brown,NY,michael.brown@email.com,212-555-0107,1975-03-14
-DB1008,Jessica,Kim,WA,jessica.kim@email.com,206-555-0108,1992-06-25
