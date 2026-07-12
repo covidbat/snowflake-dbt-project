@@ -1,10 +1,10 @@
 with source as (
-    select * from {{ source('pm_raw', 'raw_markets') }}
+    select * from {{ ref('raw_markets') }}
 )
 select
     marketid   as market_id,
     marketname as market_name,
-    region,
-    country,
-    _source_file, _load_ts
+    region, country,
+    'seed:raw_markets'  as _source_file,
+    current_timestamp() as _load_ts
 from source

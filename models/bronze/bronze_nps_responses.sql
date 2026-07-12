@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('pm_raw', 'raw_nps_responses') }}
+    select * from {{ ref('raw_nps_responses') }}
 )
 select
     responseid as response_id,
@@ -10,5 +10,6 @@ select
     channel,
     npsscore   as nps_score,
     comment,
-    _source_file, _load_ts
+    'seed:raw_nps_responses' as _source_file,
+    current_timestamp()      as _load_ts
 from source

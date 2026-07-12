@@ -5,11 +5,12 @@ config-version: 2
 profile: 'pm_sales_nps'
 
 model-paths: ["models"]
+seed-paths: ["seeds"]
 macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
-# No seed-paths: raw data now arrives via Snowpipe from S3, not CSV seeds.
+# Seeds stand in for RAW so the project runs without S3/Snowpipe.
 
 models:
   pm_sales_nps:
@@ -23,3 +24,7 @@ models:
       +materialized: table
       +schema: gold
       # facts override to incremental in-model (see fct_*.sql)
+
+seeds:
+  pm_sales_nps:
+    +schema: raw

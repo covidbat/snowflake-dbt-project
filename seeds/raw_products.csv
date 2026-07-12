@@ -1,0 +1,5 @@
+ProductID,ProductName,Brand,Category,PackSize,LaunchDate,IsActive
+P100,Alpha Gold,Alpha,Combustible,20s,2019-03-01,true
+P101,Alpha Silver,Alpha,Combustible,20s,2020-06-01,true
+P102,Beta Heat,Beta,Heated,20s,2021-09-01,true
+P103,Gamma Pouch,Gamma,Oral,10s,2022-02-01,false

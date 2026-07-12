@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ source('pm_raw', 'raw_sales_transactions') }}
+    select * from {{ ref('raw_sales_transactions') }}
 )
 select
     salesid          as sale_id,
@@ -15,6 +15,6 @@ select
     grossamount      as gross_amount,
     netamount        as net_amount,
     currency,
-    _source_file,
-    _load_ts
+    'seed:raw_sales_transactions' as _source_file,
+    current_timestamp()           as _load_ts
 from source
